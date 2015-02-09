@@ -1,0 +1,115 @@
+description = 'Reactor Cluster components'
+
+ext {
+    gradleVersion = '2.1'
+    gradleScriptDir = "${rootProject.projectDir}/gradle"
+
+    // Logging
+    slf4jVersion = '1.7.7'
+    logbackVersion = '1.1.2'
+
+    // Languages
+    groovyVersion = '2.3.9'
+
+    // Reactor
+    reactorVersion = '2.0.0.BUILD-SNAPSHOT'
+
+    // AMQP
+    amqpVersion = '3.3.5'
+
+}
+
+buildscript {
+    repositories {
+        maven { url "http://repo.spring.io/plugins-release" }
+    }
+    dependencies {
+        classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.6'
+    }
+}
+
+apply from: "$gradleScriptDir/setup.gradle"
+
+allprojects {
+    apply plugin: 'propdeps'
+    apply plugin: 'java'
+    apply plugin: 'groovy'
+    apply plugin: 'idea'
+
+
+    configurations.all {
+        exclude group: "commons-logging"
+    }
+
+    [compileJava, compileTestJava]*.options*.compilerArgs = [
+            "-Xlint:serial",
+            "-Xlint:varargs",
+            "-Xlint:cast",
+            "-Xlint:classfile",
+            "-Xlint:dep-ann",
+            "-Xlint:divzero",
+            "-Xlint:empty",
+            "-Xlint:finally",
+            "-Xlint:overrides",
+            "-Xlint:path",
+            "-Xlint:processing",
+            "-Xlint:static",
+            "-Xlint:try",
+            "-Xlint:-options", // intentionally disabled
+            "-Xlint:-fallthrough", // intentionally disabled
+            "-Xlint:-rawtypes", // TODO enable and fix warnings
+            "-Xlint:-deprecation", // TODO enable and fix warnings
+            "-Xlint:-unchecked" // TODO enable and fix warnings
+    ]
+
+    compileJava {
+        sourceCompatibility = 1.7
+        targetCompatibility = 1.7
+    }
+
+    compileTestJava {
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
+    }
+
+    test {
+        systemProperty("java.awt.headless", "true")
+        systemProperty("testGroups", project.properties.get("testGroups"))
+        scanForTestClasses = false
+        include '**/*Tests.*'
+        exclude '**/*Abstract*.*'
+    }
+
+    group = 'io.projectreactor.cluster'
+    repositories {
+        mavenLocal()
+        maven { url 'http://repo.spring.io/libs-snapshot' }
+        mavenCentral()
+        jcenter()
+    }
+
+    dependencies {
+        // Logging
+        compile "org.slf4j:slf4j-api:$slf4jVersion"
+
+        // Testing
+        testCompile "junit:junit-dep:4.11",
+                "org.codehaus.groovy:groovy-all:$groovyVersion"
+
+        testCompile "org.spockframework:spock-core:0.7-groovy-2.0", {
+            exclude module: "groovy-all"
+        }
+
+        testRuntime "ch.qos.logback:logback-classic:$logbackVersion",
+                "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+    }
+}
+
+project('cluster-stream') {
+    description = 'Reactor Cluster for data distribution on the network'
+
+    dependencies {
+        // Reactor
+        compile "io.projectreactor:reactor-core:$reactorVersion"
+    }
+}
